@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: cinepi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cinepi
+      POSTGRES_USER: cinepi
+      POSTGRES_PASSWORD: cinepi
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cinepi -d cinepi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

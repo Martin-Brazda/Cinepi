@@ -1,0 +1,8 @@
+venv/
+.env
+node_modules
+go.sum
+cinepi.db
+debug_scraper.js
+supabase
+Cinepi

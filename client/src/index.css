@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --red: #e5383b;
+  --red-dim: #3a1515;
+  --bg: #0f0f0f;
+  --bg2: #1a1a1a;
+  --bg3: #242424;
+  --bg4: #2e2e2e;
+  --text: #ffffff;
+  --text2: rgba(255,255,255,0.6);
+  --text3: rgba(255,255,255,0.3);
+  --border: rgba(255,255,255,0.07);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--bg)] text-[var(--text)] m-0 p-0 overflow-hidden select-none;
+    font-family: var(--font-sans);
+  }
+
+  * {
+    @apply box-border outline-none;
+  }
+
+  /* Custom scrollbar for better TV look */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply flex items-center gap-2 bg-[var(--red)] text-white text-[13px] font-medium px-5 py-2 rounded-md cursor-pointer hover:bg-[#cc2f32] transition-colors border-none;
+  }
+
+  .btn-secondary {
+    @apply flex items-center gap-2 bg-[var(--bg3)] text-[var(--text)] border border-[var(--border)] text-[13px] px-5 py-2 rounded-md cursor-pointer hover:bg-[var(--bg4)] transition-colors;
+  }
+
+  .card-focus-scale {
+    @apply transition-transform duration-200;
+  }
+  
+  .focused {
+    @apply border-white ring-2 ring-white scale-105 z-10;
+  }
+}
+
+/* Page transitions */
+.fade-enter { opacity: 0; }
+.fade-enter-active { opacity: 1; transition: opacity 300ms ease-in; }
+.fade-exit { opacity: 1; }
+.fade-exit-active { opacity: 0; transition: opacity 300ms ease-out; }
+
+/* Grid and Rows */
+.hero-bg-gradient {
+  background: linear-gradient(135deg, #1a0a0a 0%, #0f0f1a 50%, #0a1a0f 100%);
+}
+
+.hero-content-gradient {
+  background: linear-gradient(to top, var(--bg) 0%, transparent 100%);
+}
+
+/* Card gradients */
+.th-purple { background: linear-gradient(135deg, #26215C, #534AB7); }
+.th-teal   { background: linear-gradient(135deg, #04342C, #1D9E75); }
+.th-coral  { background: linear-gradient(135deg, #4A1B0C, #D85A30); }
+.th-blue   { background: linear-gradient(135deg, #042C53, #378ADD); }
+.th-pink   { background: linear-gradient(135deg, #4B1528, #D4537E); }
+.th-amber  { background: linear-gradient(135deg, #412402, #BA7517); }
+.th-green  { background: linear-gradient(135deg, #173404, #639922); }
+.th-gray   { background: linear-gradient(135deg, #2C2C2A, #888780); }
+

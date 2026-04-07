@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "hls.js": "^1.6.15",
+    "supabase": "^2.85.0"
+  }
+}
