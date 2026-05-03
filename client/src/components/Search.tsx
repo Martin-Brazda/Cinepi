@@ -55,6 +55,29 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
     };
   }, [query]);
 
+  useEffect(() => {
+    const onText = (e: Event) => {
+      const text = (e as CustomEvent<string>).detail;
+      if (typeof text === 'string' && text.trim() !== '') {
+        setQuery(prev => (prev + text).toUpperCase());
+      }
+    };
+    const onBackspace = () => setQuery(prev => prev.slice(0, -1));
+    const onClear = () => setQuery('');
+    const onRun = () => runExternalSearch();
+
+    window.addEventListener('cinepi-remote-search-text', onText as EventListener);
+    window.addEventListener('cinepi-remote-search-backspace', onBackspace as EventListener);
+    window.addEventListener('cinepi-remote-search-clear', onClear as EventListener);
+    window.addEventListener('cinepi-remote-search-run', onRun as EventListener);
+    return () => {
+      window.removeEventListener('cinepi-remote-search-text', onText as EventListener);
+      window.removeEventListener('cinepi-remote-search-backspace', onBackspace as EventListener);
+      window.removeEventListener('cinepi-remote-search-clear', onClear as EventListener);
+      window.removeEventListener('cinepi-remote-search-run', onRun as EventListener);
+    };
+  }, []);
+
   const runExternalSearch = () => {
     if (query.trim().length < 2) return;
     const controller = new AbortController();
@@ -68,6 +91,14 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
         }
       })
       .finally(() => setIsSearchingExternal(false));
+  };
+
+  const focusFirstResult = () => {
+    if (results.length > 0) {
+      setFocus(`res-${results[0].id}`);
+      return true;
+    }
+    return false;
   };
 
   const handleKeyPress = (key: string) => {
@@ -116,6 +147,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
               col={1}
               groupId="search"
               onEnter={() => handleKeyPress('SPACE')}
+              onDown={focusFirstResult}
               className="w-40 h-10 flex items-center justify-center bg-black/40 border border-white/10 rounded font-bold text-sm tracking-widest"
               activeClassName="bg-white/20 border-white scale-105 shadow-lg z-10 text-white"
             >
@@ -127,6 +159,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
               col={2}
               groupId="search"
               onEnter={() => handleKeyPress('BACKSPACE')}
+              onDown={focusFirstResult}
               className="w-24 h-10 flex items-center justify-center bg-black/40 border border-white/10 rounded font-bold text-sm bg-red/20 text-red"
               activeClassName="bg-red border-white scale-105 shadow-lg z-10"
             >
@@ -138,6 +171,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
               col={3}
               groupId="search"
               onEnter={() => handleKeyPress('CLEAR')}
+              onDown={focusFirstResult}
               className="w-24 h-10 flex items-center justify-center bg-black/40 border border-white/10 rounded font-bold text-sm text-white/50"
               activeClassName="bg-white/20 border-white scale-105 shadow-lg z-10 text-white"
             >
@@ -149,6 +183,8 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
               col={4}
               groupId="search"
               onEnter={runExternalSearch}
+              onDown={focusFirstResult}
+              onRight={focusFirstResult}
               className="w-28 h-10 flex items-center justify-center bg-red/20 border border-white/10 rounded font-bold text-sm tracking-widest"
               activeClassName="bg-red border-white scale-105 shadow-lg z-10 text-white"
             >
@@ -159,7 +195,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
       </div>
 
       {/* Results Right Panel */}
-      <div className="flex-1 border-l border-white/10 pl-12 overflow-y-auto pt-16 no-scrollbar pb-32">
+      <div className="flex-1 border-l border-white/10 pl-12 overflow-y-auto pt-16 no-scrollbar pb-32 overflow-x-visible">
         <p className="text-white/40 mb-6 font-bold uppercase tracking-widest text-xs">
           {query.length < 2
             ? "Type at least 2 characters..."
@@ -168,7 +204,7 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
               : `${results.length} Results Found`}
         </p>
 
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-6 pt-2 pb-4 overflow-visible">
           {results.map((show, i) => {
             const r = Math.floor(i / 4);
             const c = i % 4;
@@ -181,10 +217,17 @@ export const Search: React.FC<SearchProps> = ({ onSelectShow }) => {
                 col={c + 1}
                 groupId="search-results"
                 className="w-40 aspect-[2/3] rounded-lg overflow-hidden border border-white/5 bg-bg2 relative group shrink-0"
-                activeClassName="ring-2 ring-white scale-105 z-10"
                 detailsOverlayClassName="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-100"
                 detailsWrapClassName="absolute bottom-0 left-0 right-0 p-3"
                 onSelect={onSelectShow}
+                activeClassName="ring-2 ring-white scale-105 z-20"
+                onUp={() => {
+                  if (r === 0) {
+                    setFocus('key-SEARCH');
+                    return true;
+                  }
+                  return false;
+                }}
               />
             )
           })}

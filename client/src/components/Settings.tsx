@@ -4,12 +4,14 @@ import { useNavigation } from '../context/NavigationContext';
 import { Activity, HardDrive, Wifi, Shield, Cpu } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../lib/api';
+import { useRemoteControl } from '../context/RemoteControlContext';
 
 interface SettingsProps {}
 
 export const Settings: React.FC<SettingsProps> = () => {
   const { setFocus } = useNavigation();
   const { token, profiles, profileId, setProfileId, refreshProfiles, login, logout } = useAuth();
+  const { connected: remoteConnected, pairCode, pairUrl } = useRemoteControl();
   const [autoPlay, setAutoPlay] = useState(true);
   const [highQuality, setHighQuality] = useState(true);
   const [email, setEmail] = useState('');
@@ -155,6 +157,27 @@ export const Settings: React.FC<SettingsProps> = () => {
                     <div>
                         <div className="text-xs text-white/50">Firmware Version</div>
                         <div className="font-bold text-sm tracking-widest">CINEPI-OS v1.4.2 stable</div>
+                    </div>
+                </div>
+                <div className="bg-bg2 border border-white/5 p-4 rounded-lg flex gap-4 items-center col-span-2">
+                    <Wifi size={24} className={remoteConnected ? "text-emerald-400" : "text-red"} />
+                    <div>
+                        <div className="text-xs text-white/50">Mobile Remote Pairing</div>
+                        <div className="font-bold text-sm tracking-widest">
+                          {remoteConnected ? `Bridge connected${pairCode ? ` - Code ${pairCode}` : ''}` : 'Bridge offline (run npm run remote:bridge)'}
+                        </div>
+                        {pairUrl && (
+                          <div className="mt-2">
+                            <div className="text-[11px] text-white/60 break-all">{pairUrl}{pairCode ? `?code=${pairCode}` : ''}</div>
+                            {pairCode && (
+                              <img
+                                alt="Remote Pair QR"
+                                className="mt-2 w-24 h-24 rounded border border-white/20 bg-white p-1"
+                                src={`https://quickchart.io/qr?size=160&text=${encodeURIComponent(`${pairUrl}?code=${pairCode}`)}`}
+                              />
+                            )}
+                          </div>
+                        )}
                     </div>
                 </div>
             </div>

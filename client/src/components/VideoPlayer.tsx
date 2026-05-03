@@ -195,6 +195,15 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({ url, title, subtitle, 
     }
   };
 
+  useEffect(() => {
+    const detail = {
+      title,
+      progress: Math.round(progress),
+      isPlaying,
+    };
+    window.dispatchEvent(new CustomEvent('cinepi-tv-status', { detail }));
+  }, [title, progress, isPlaying]);
+
   const onLoadedMetadata = () => {
     if (!videoRef.current) return;
     const dur = videoRef.current.duration;

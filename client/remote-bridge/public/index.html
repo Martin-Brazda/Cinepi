@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Cinepi Remote</title>
+    <link rel="stylesheet" href="/remote.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Cinepi Remote</h1>
+      <div class="pair">
+        <input id="code" placeholder="Pair code" maxlength="4" />
+        <button id="connect">Connect</button>
+      </div>
+      <p id="status">Not connected</p>
+      <div id="nowPlaying" class="nowplaying">
+        <div class="np-title">Nothing playing</div>
+        <div class="np-meta">0%</div>
+      </div>
+      <div class="typebox">
+        <input id="searchText" placeholder="Type search text" />
+        <button id="sendText">Send</button>
+      </div>
+      <div class="extra">
+        <button data-cmd="backspace">Backspace</button>
+        <button data-cmd="clear_search">Clear</button>
+        <button data-cmd="run_search">Search</button>
+      </div>
+      <div class="pad">
+        <button data-cmd="up">Up</button>
+        <div class="middle">
+          <button data-cmd="left">Left</button>
+          <button data-cmd="select" class="primary">OK</button>
+          <button data-cmd="right">Right</button>
+        </div>
+        <button data-cmd="down">Down</button>
+      </div>
+      <div class="extra">
+        <button data-cmd="back">Back</button>
+        <button data-cmd="playpause">Play/Pause</button>
+      </div>
+    </main>
+    <script src="/remote.js"></script>
+  </body>
+  </html>

@@ -1,0 +1,12 @@
+services:
+  server:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:8099}
+      # Database URL from .env
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env

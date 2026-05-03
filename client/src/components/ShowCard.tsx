@@ -21,6 +21,10 @@ interface ShowCardProps {
   titleClassName?: string;
   categoryClassName?: string;
   onSelect: (id: string) => void;
+  onUp?: () => boolean | void;
+  onDown?: () => boolean | void;
+  onLeft?: () => boolean | void;
+  onRight?: () => boolean | void;
 }
 
 const isImagePoster = (posterUrl?: string) =>
@@ -39,6 +43,10 @@ export const ShowCard: React.FC<ShowCardProps> = React.memo(({
   titleClassName = 'text-[11px] font-bold truncate',
   categoryClassName = 'text-[9px] text-white/40',
   onSelect,
+  onUp,
+  onDown,
+  onLeft,
+  onRight,
 }) => {
   return (
     <Focusable
@@ -49,6 +57,10 @@ export const ShowCard: React.FC<ShowCardProps> = React.memo(({
       className={className}
       activeClassName={activeClassName}
       onEnter={() => onSelect(show.id)}
+      onUp={onUp}
+      onDown={onDown}
+      onLeft={onLeft}
+      onRight={onRight}
     >
       {isImagePoster(show.poster_url) ? (
         <img src={show.poster_url} alt={show.title} className="absolute inset-0 w-full h-full object-cover" />

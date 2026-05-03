@@ -111,6 +111,7 @@ const HomePage = ({
   }, [])
 
   const featured = shows.length > 0 ? shows[0] : null
+  let navRowCursor = 2
 
   return (
     <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
@@ -151,33 +152,38 @@ const HomePage = ({
         {continueRows.length > 0 && (
           <section>
             <h2 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Continue Watching</h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+            <div className="flex gap-4 overflow-x-auto overflow-y-visible pt-2 pb-4 px-3 -mx-3 no-scrollbar">
               {continueRows.map((show, colIdx) => (
-                <ShowCard key={`cw-${show.id}`} show={show} focusId={`cw-${show.id}`} row={2} col={colIdx + 1} groupId="continue" className="flex-shrink-0 w-40 aspect-[2/3] rounded-lg overflow-hidden border border-white/5 bg-bg2 relative group" onSelect={onSelectShow} />
+                <ShowCard key={`cw-${show.id}`} show={show} focusId={`cw-${show.id}`} row={navRowCursor} col={colIdx + 1} groupId="continue" className="flex-shrink-0 w-40 aspect-[2/3] rounded-lg overflow-hidden border border-white/5 bg-bg2 relative group" onSelect={onSelectShow} />
               ))}
             </div>
           </section>
         )}
+        {continueRows.length > 0 && (() => { navRowCursor += 1; return null; })()}
         {recommendations.length > 0 && (
           <section>
             <h2 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">Recommended For You</h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+            <div className="flex gap-4 overflow-x-auto overflow-y-visible pt-2 pb-4 px-3 -mx-3 no-scrollbar">
               {recommendations.map((show, colIdx) => (
-                <ShowCard key={`rec-${show.id}`} show={show} focusId={`rec-${show.id}`} row={3} col={colIdx + 1} groupId="recommendations" className="flex-shrink-0 w-40 aspect-[2/3] rounded-lg overflow-hidden border border-white/5 bg-bg2 relative group" onSelect={onSelectShow} />
+                <ShowCard key={`rec-${show.id}`} show={show} focusId={`rec-${show.id}`} row={navRowCursor} col={colIdx + 1} groupId="recommendations" className="flex-shrink-0 w-40 aspect-[2/3] rounded-lg overflow-hidden border border-white/5 bg-bg2 relative group" onSelect={onSelectShow} />
               ))}
             </div>
           </section>
         )}
-        {groupedShows.map((group, rowIdx) => (
+        {recommendations.length > 0 && (() => { navRowCursor += 1; return null; })()}
+        {groupedShows.map((group) => {
+          const rowValue = navRowCursor;
+          navRowCursor += 1;
+          return (
           <section key={group.category}>
             <h2 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">{group.category}</h2>
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+            <div className="flex gap-4 overflow-x-auto overflow-y-visible pt-2 pb-4 px-3 -mx-3 no-scrollbar">
               {group.items.map((show, colIdx) => (
                 <ShowCard
                   key={show.id}
                   show={show}
                   focusId={`cat-${group.category}-${show.id}`}
-                  row={rowIdx + 2} // start from row 2
+                  row={rowValue}
                   col={colIdx + 1}
                   groupId={`category-${group.category}`}
                   className="flex-shrink-0 w-40 aspect-[2/3] rounded-lg overflow-hidden border border-white/5 bg-bg2 relative group"
@@ -186,7 +192,7 @@ const HomePage = ({
               ))}
             </div>
           </section>
-        ))}
+        )})}
       </div>
     </div>
   )
@@ -213,12 +219,19 @@ const AppContent = () => {
 
   const [playingEpisode, setPlayingEpisode] = useState<Episode | null>(null);
   const [playingShow, setPlayingShow] = useState<Show | null>(null);
+  const [playingSeasonNumber, setPlayingSeasonNumber] = useState<number | null>(null);
 
   const handlePlayEpisode = async (show: Show, episode: Episode) => {
     if (!episode.scrape_url) return;
     setPlayingEpisodeMeta({ title: `Episode ${episode.number}: ${episode.title}`, subtitle: show.title })
     setPlayingEpisode(episode)
     setPlayingShow(show)
+    for (const s of show.seasons || []) {
+      if (s.episodes.some(e => e.id === episode.id)) {
+        setPlayingSeasonNumber(s.number)
+        break
+      }
+    }
     setIsScraping(true)
     try {
       const res = await fetch(`${API_BASE}/scrape?url=${encodeURIComponent(episode.scrape_url)}`)
@@ -245,29 +258,43 @@ const AppContent = () => {
 
   const handlePlayNext = () => {
     if (!playingShow || !playingEpisode) return;
-    let foundCurrent = false;
-    let nextEp: Episode | null = null;
-
-    for (const season of playingShow.seasons || []) {
-      for (const ep of season.episodes) {
-        if (foundCurrent) {
-          nextEp = ep;
-          break;
+    const fallback = () => {
+      let foundCurrent = false;
+      let nextEp: Episode | null = null;
+      for (const season of playingShow.seasons || []) {
+        for (const ep of season.episodes) {
+          if (foundCurrent) {
+            nextEp = ep;
+            break;
+          }
+          if (ep.id === playingEpisode.id) foundCurrent = true;
         }
-        if (ep.id === playingEpisode.id) {
-          foundCurrent = true;
-        }
+        if (nextEp) break;
       }
-      if (nextEp) break;
-    }
+      if (nextEp) handlePlayEpisode(playingShow, nextEp);
+      else {
+        setVideoUrl(null);
+        setActivePage('details');
+      }
+    };
 
-    if (nextEp) {
-      handlePlayEpisode(playingShow, nextEp);
-    } else {
-      // no next episode
-      setVideoUrl(null);
-      setActivePage('details');
+    if (!playingSeasonNumber) {
+      fallback();
+      return;
     }
+    fetch(`${API_BASE}/shows/${playingShow.id}/auto-next?season=${playingSeasonNumber}&episode=${playingEpisode.number}`)
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (!data || !data.has_next) {
+          fallback();
+          return;
+        }
+        const season = (playingShow.seasons || []).find(s => s.number === data.season);
+        const next = season?.episodes.find(e => e.number === data.episode || e.id === data.episode_id);
+        if (next) handlePlayEpisode(playingShow, next);
+        else fallback();
+      })
+      .catch(() => fallback());
   };
 
   let hasNextEpisode = false;
@@ -286,7 +313,11 @@ const AppContent = () => {
     <div className="flex flex-col h-screen overflow-hidden bg-bg relative">
       {/* Top Nav */}
       <div className="flex items-center px-8 h-14 border-b border-white/5 bg-bg/80 backdrop-blur-md sticky top-0 z-50">
-      <span className="text-red font-bold tracking-widest text-sm mr-8">CINEPI</span>
+        <img
+          src="/Gemini_Generated_Image_vsu2xivsu2xivsu2.png"
+          alt="Cinepi"
+          className="h-8 w-auto mr-8 object-contain"
+        />
         <div className="flex-1" />
         <div className="flex items-center gap-2 bg-bg2 border border-white/5 px-3 py-1 rounded-full">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

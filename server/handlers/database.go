@@ -23,7 +23,10 @@ func LoadDatabase() {
 		loadPostgres(databaseURL)
 		return
 	}
-	log.Println("Database backend: sqlite (fallback)")
+	if isProductionEnv() {
+		log.Fatal("DATABASE_URL (or DB_CONN_STRING) is required in production")
+	}
+	log.Println("Database URL missing; using sqlite fallback for non-production environment")
 	loadSQLite()
 }
 
@@ -69,14 +72,21 @@ func loadPostgres(databaseURL string) {
 		log.Println("Using Supabase pooler URL for Postgres connection.")
 		connectionURL = poolerURL
 	}
-	connectionURL = addIPv4HostAddr(connectionURL)
+	var err error
+	connectionURL, err = addIPv4HostAddr(connectionURL)
+	if err != nil {
+		log.Fatalf("failed to prepare postgres connection URL: %v", err)
+	}
 	db, err := gorm.Open(postgres.Open(connectionURL), &gorm.Config{})
 	if err != nil {
 		if isNetworkUnreachableError(err) {
 			poolerURL := getPoolerURL()
 			if poolerURL != "" && poolerURL != connectionURL {
 				log.Println("Primary Postgres host unreachable; retrying with pooler URL.")
-				connectionURL = addIPv4HostAddr(poolerURL)
+				connectionURL, err = addIPv4HostAddr(poolerURL)
+				if err != nil {
+					log.Fatalf("failed to prepare postgres pooler URL: %v", err)
+				}
 				db, err = gorm.Open(postgres.Open(connectionURL), &gorm.Config{})
 			}
 		}
@@ -124,30 +134,39 @@ func loadPostgres(databaseURL string) {
 	log.Printf("Connected to Postgres. Loaded %d shows.", count)
 }
 
-func addIPv4HostAddr(databaseURL string) string {
+func addIPv4HostAddr(databaseURL string) (string, error) {
 	parsed, err := neturl.Parse(databaseURL)
 	if err != nil {
-		return databaseURL
+		if isHostAddrStrict() {
+			return "", err
+		}
+		return databaseURL, nil
 	}
 
 	scheme := strings.ToLower(parsed.Scheme)
 	if scheme != "postgres" && scheme != "postgresql" {
-		return databaseURL
+		return databaseURL, nil
 	}
 
 	query := parsed.Query()
 	if query.Get("hostaddr") != "" {
-		return databaseURL
+		return databaseURL, nil
 	}
 
 	host := parsed.Hostname()
 	if host == "" {
-		return databaseURL
+		if isHostAddrStrict() {
+			return "", net.InvalidAddrError("postgres host is empty")
+		}
+		return databaseURL, nil
 	}
 
 	ips, err := net.LookupIP(host)
 	if err != nil {
-		return databaseURL
+		if isHostAddrStrict() {
+			return "", err
+		}
+		return databaseURL, nil
 	}
 
 	for _, ip := range ips {
@@ -155,12 +174,14 @@ func addIPv4HostAddr(databaseURL string) string {
 			query.Set("hostaddr", ip4.String())
 			parsed.RawQuery = query.Encode()
 			log.Printf("Using IPv4 hostaddr %s for postgres host %s", ip4.String(), host)
-			return parsed.String()
+			return parsed.String(), nil
 		}
 	}
 	log.Printf("No IPv4 address found for postgres host %s; keeping original host resolution", host)
-
-	return databaseURL
+	if isHostAddrStrict() {
+		return "", net.InvalidAddrError("no IPv4 address found for postgres host " + host)
+	}
+	return databaseURL, nil
 }
 
 func isNetworkUnreachableError(err error) bool {
@@ -175,6 +196,16 @@ func getPoolerURL() string {
 		return value
 	}
 	return ""
+}
+
+func isProductionEnv() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
+	return value == "prod" || value == "production"
+}
+
+func isHostAddrStrict() bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv("DB_HOSTADDR_STRICT")))
+	return value == "1" || value == "true" || value == "yes" || isProductionEnv()
 }
 
 func AddOrUpdateShow(show Show) error {

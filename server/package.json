@@ -1,6 +1,18 @@
 {
   "dependencies": {
     "hls.js": "^1.6.15",
+    "playwright": "^1.59.1",
     "supabase": "^2.85.0"
-  }
+  },
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "debug_scraper.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }

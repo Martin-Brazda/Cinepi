@@ -56,7 +56,7 @@ export const Browse: React.FC<BrowseProps> = ({ onSelectShow }) => {
           <button className="btn-secondary px-3 py-1 text-xs disabled:opacity-40" disabled={!hasMore} onClick={() => setPage(p => p + 1)}>Next</button>
         </div>
 
-        <div className="flex flex-wrap gap-6">
+        <div className="flex flex-wrap gap-6 pt-2 pb-4 overflow-visible">
           {shows.map((show, i) => {
             const cols = 5;
             const r = Math.floor(i / cols);

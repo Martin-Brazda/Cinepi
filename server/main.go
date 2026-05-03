@@ -12,11 +12,29 @@ import (
 )
 
 func CORSMiddleware() gin.HandlerFunc {
+	allowedOrigins := map[string]struct{}{}
+	for _, origin := range strings.Split(os.Getenv("CORS_ALLOWED_ORIGINS"), ",") {
+		normalized := strings.TrimSpace(origin)
+		if normalized == "" {
+			continue
+		}
+		allowedOrigins[normalized] = struct{}{}
+	}
+	allowAnyOrigin := len(allowedOrigins) == 0
+
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		requestOrigin := strings.TrimSpace(c.GetHeader("Origin"))
+		if allowAnyOrigin {
+			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		} else if requestOrigin != "" {
+			if _, ok := allowedOrigins[requestOrigin]; ok {
+				c.Writer.Header().Set("Access-Control-Allow-Origin", requestOrigin)
+				c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+				c.Writer.Header().Set("Vary", "Origin")
+			}
+		}
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -47,7 +65,7 @@ func main() {
 		v1.GET("/home-rows", handlers.GetHomeRows)
 		v1.GET("/shows/:id", handlers.GetShowByID)
 		v1.GET("/search", handlers.SearchShows)
-		v1.GET("/scrape", handlers.Scrape)
+		v1.GET("/scrape", handlers.ScrapeRateLimitMiddleware(), handlers.Scrape)
 		v1.POST("/progress", handlers.UpdateProgress)
 		v1.POST("/auth/register", handlers.Register)
 		v1.POST("/auth/login", handlers.Login)
@@ -80,8 +98,13 @@ func main() {
 		}
 	}
 
-	log.Println("Cinepi Server starting on :8081")
-	if err := r.Run(":8081"); err != nil {
+	port := strings.TrimSpace(os.Getenv("PORT"))
+	if port == "" {
+		port = "8081"
+	}
+	addr := ":" + port
+	log.Printf("Cinepi Server starting on %s", addr)
+	if err := r.Run(addr); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

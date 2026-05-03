@@ -61,43 +61,53 @@ export const NavigationProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     if (!current) return;
 
     let bestNext: NavNode | null = null;
-    let minDistance = Infinity;
+    let minScore = Infinity;
 
     nodes.forEach((node) => {
       if (node.id === focusedId) return;
 
+      const dx = node.col - current.col;
+      const dy = node.row - current.row;
       let isCandidate = false;
-      let distance = 0;
+      let primary = 0;
+      let secondary = 0;
 
       switch (direction) {
         case 'up':
-          if (node.row < current.row && node.col === current.col) {
+          if (dy < 0) {
             isCandidate = true;
-            distance = current.row - node.row;
+            primary = Math.abs(dy);
+            secondary = Math.abs(dx);
           }
           break;
         case 'down':
-          if (node.row > current.row && node.col === current.col) {
+          if (dy > 0) {
             isCandidate = true;
-            distance = node.row - current.row;
+            primary = Math.abs(dy);
+            secondary = Math.abs(dx);
           }
           break;
         case 'left':
-          if (node.col < current.col && node.row === current.row) {
+          if (dx < 0) {
             isCandidate = true;
-            distance = current.col - node.col;
+            primary = Math.abs(dx);
+            secondary = Math.abs(dy);
           }
           break;
         case 'right':
-          if (node.col > current.col && node.row === current.row) {
+          if (dx > 0) {
             isCandidate = true;
-            distance = node.col - current.col;
+            primary = Math.abs(dx);
+            secondary = Math.abs(dy);
           }
           break;
       }
 
-      if (isCandidate && distance < minDistance) {
-        minDistance = distance;
+      if (!isCandidate) return;
+      // Heavily prioritize direction axis, then proximity on cross-axis.
+      const score = primary * 100 + secondary;
+      if (score < minScore) {
+        minScore = score;
         bestNext = node;
       }
     });

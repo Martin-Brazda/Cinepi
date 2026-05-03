@@ -43,6 +43,7 @@ export const Focusable: React.FC<FocusableProps> = ({
   const { focusedId, register, unregister } = useNavigation();
   const isFocused = focusedId === id;
   const prevFocused = useRef(isFocused);
+  const elRef = useRef<HTMLDivElement | null>(null);
 
   const callbacksRef = useRef({ onEnter, onFocus, onBlur, onLeft, onRight, onUp, onDown });
   useEffect(() => {
@@ -68,6 +69,12 @@ export const Focusable: React.FC<FocusableProps> = ({
 
   useEffect(() => {
     if (isFocused && !prevFocused.current) {
+      // Keep focused card visible in horizontal/vertical scroll containers.
+      elRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
       onFocus?.();
     } else if (!isFocused && prevFocused.current) {
       onBlur?.();
@@ -78,6 +85,7 @@ export const Focusable: React.FC<FocusableProps> = ({
   return (
     <div
       id={id}
+      ref={elRef}
       className={cn(className, 'card-focus-scale', isFocused && activeClassName)}
       onClick={onEnter}
     >

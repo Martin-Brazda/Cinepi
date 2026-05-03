@@ -1,0 +1,16 @@
+{
+  "expo": {
+    "name": "Stream Player Mobile",
+    "slug": "stream-player-mobile",
+    "scheme": "streamplayermobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
